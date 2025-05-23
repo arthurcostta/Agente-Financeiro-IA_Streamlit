@@ -98,7 +98,7 @@ def processar_dados_streamlit(email, renda, fonte_renda, dependentes, estabilida
 
     # Classificação padrão (mantida para a lógica interna de essenciais/supérfluos)
     classificacao_padrao = {
-        'Moradia(Aluguel)': {'tipo': 'Essencial', 'natureza': 'Fixo'},
+        'Moradia (Aluguel)': {'tipo': 'Essencial', 'natureza': 'Fixo'},
         'Alimentação': {'tipo': 'Essencial', 'natureza': 'Variável'},
         'Transporte (Carro, Transporte Público, Uber...)': {'tipo': 'Essencial', 'natureza': 'Variável'},
         'Saúde': {'tipo': 'Essencial', 'natureza': 'Variável'},
@@ -481,7 +481,7 @@ def main():
         st.info("Digite 0 para categorias sem gasto.")
         # Exemplo de categorias (adicione/remova conforme necessário)
         categorias_sugeridas = [
-            'Moradia(Aluguel)', 'Alimentação', 'Transporte (Carro, Transporte Público, Uber...)', 'Saúde', 'Educação',
+            'Moradia (Aluguel)', 'Alimentação', 'Transporte (Carro, Transporte Público, Uber...)', 'Saúde', 'Educação',
             'Lazer', 'Assinaturas', 'Contas de Consumo (água, luz, gás)', 'Outros (Cabelo, Estética...)'
         ]
         gastos_dict = {}
