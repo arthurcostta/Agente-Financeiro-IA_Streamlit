@@ -393,47 +393,62 @@ def main():
 
     st.set_page_config(page_title="Agente Financeiro Pessoal com IA", layout="wide")
 
-    # --- Configuração de Ambiente e APIs (MOVIDO PARA DENTRO DE MAIN) ---
-    load_dotenv() # Carrega variáveis do arquivo .env
-    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+    # --- Configuração de Ambiente e APIs ---
+# Remova a linha load_dotenv() se ela estiver no escopo global fora de main()
+# Mantenha-a dentro do `else` do GOOGLE_API_KEY para uso local, se desejar.
 
+# Configuração da Google AI Key
+if 'GOOGLE_API_KEY' in st.secrets:
+    GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
+    st.success("GOOGLE_API_KEY carregada dos Streamlit Secrets.")
+else:
+    # Fallback para desenvolvimento local (lê do .env)
+    load_dotenv() # Garante que o .env seja lido para ambiente local
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     if not GOOGLE_API_KEY:
         st.error("ERRO: A variável de ambiente GOOGLE_API_KEY não está configurada.")
-        st.warning("Certifique-se de que ela está definida no seu arquivo .env na raiz do projeto.")
+        st.warning("Defina-a no seu arquivo .env local OU nos secrets do Streamlit Cloud.")
         st.stop() # Interrompe a execução do Streamlit
 
-    # Configura o modelo de IA
+# Configura o modelo de IA
+try:
+    genai.configure(api_key=GOOGLE_API_KEY)
+    MODEL_IA = genai.GenerativeModel('gemini-2.0-flash')
+except Exception as e:
+    st.error(f"ERRO ao configurar a API do Google Gemini: {e}")
+    st.warning("Verifique se sua GOOGLE_API_KEY está correta e ativa.")
+    st.stop()
+
+# --- Configuração do Google Sheets API ---
+CLIENT_SHEETS = None
+
+# Preferência por carregar as credenciais do Google Sheets via secrets no Streamlit Cloud
+if 'gcp_service_account_json' in st.secrets:
     try:
-        genai.configure(api_key=GOOGLE_API_KEY)
-        MODEL_IA = genai.GenerativeModel('gemini-2.0-flash')
+        # Use gspread.service_account_from_dict para carregar as credenciais diretamente do JSON em formato de dicionário
+        CLIENT_SHEETS = gspread.service_account_from_dict(st.secrets["gcp_service_account_json"])
+        st.success("Autenticação com Google Sheets API via Streamlit Secrets bem-sucedida.")
     except Exception as e:
-        st.error(f"ERRO ao configurar a API do Google Gemini: {e}")
-        st.warning("Verifique se sua GOOGLE_API_KEY está correta e ativa.")
+        st.error(f"ERRO de autenticação com Google Sheets API (via secrets): {e}")
+        st.warning("Verifique se o JSON em 'gcp_service_account_json' nos secrets está correto e completo.")
         st.stop()
-
-    # --- Configuração do Google Sheets API (MOVIDO PARA DENTRO DE MAIN) ---
+else:
+    # Fallback para desenvolvimento local usando o arquivo JSON
     # !!! ATUALIZE ESTE CAMINHO COM O CAMINHO COMPLETO PARA O ARQUIVO JSON NO SEU SISTEMA DE ARQUIVOS !!!
-    # EXEMPLO: 'C:/Users/SeuUsuario/Documents/credenciais.json' (Windows, usando barras normais)
-    # OU 'C:\\Users\\SeuUsuario\\Documents\\credenciais.json' (Windows, usando barras duplas)
-    # OU '/home/seu_usuario/documentos/credenciais.json' (Linux/macOS)
-    SERVICE_ACCOUNT_KEY_FILE = 'C:\\Users\\arthu\\google_sheets_key.json' # <--- ATUALIZE AQUI
+    SERVICE_ACCOUNT_KEY_FILE = 'C:\\Users\\arthu\\google_sheets_key.json' # <--- MANTENHA ESTE CAMINHO LOCAL
 
-
-    CLIENT_SHEETS = None # Inicializa o cliente como None
+    if not os.path.exists(SERVICE_ACCOUNT_KEY_FILE):
+        st.error(f"Arquivo de credenciais não encontrado: {SERVICE_ACCOUNT_KEY_FILE}")
+        st.warning("Por favor, verifique se o caminho para o arquivo JSON está correto LOCALMENTE ou configure os secrets no Streamlit Cloud.")
+        st.stop() # Interrompe se o arquivo não for encontrado
     try:
-        if not os.path.exists(SERVICE_ACCOUNT_KEY_FILE):
-            st.error(f"Arquivo de credenciais não encontrado: {SERVICE_ACCOUNT_KEY_FILE}")
-            st.warning("Por favor, verifique se o caminho para o arquivo JSON está correto.")
-            st.info(f"O caminho configurado é: '{SERVICE_ACCOUNT_KEY_FILE}'")
-            st.stop() # Interrompe se o arquivo não for encontrado
-        else:
-            CREDS = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_KEY_FILE, SCOPE)
-            CLIENT_SHEETS = gspread.authorize(CREDS)
-            st.success("Autenticação com Google Sheets API bem-sucedida.")
+        CREDS = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_KEY_FILE, SCOPE)
+        CLIENT_SHEETS = gspread.authorize(CREDS)
+        st.success("Autenticação com Google Sheets API localmente bem-sucedida.")
     except Exception as e:
-        st.error(f"ERRO de autenticação com Google Sheets API: {e}")
+        st.error(f"ERRO de autenticação com Google Sheets API (via arquivo): {e}")
         st.warning("Verifique se o arquivo JSON não está corrompido e se a conta de serviço está ativa.")
-        st.stop() # Interrompe se a autenticação falhar
+        st.stop()
 
 
     st.title("🤖 Agente Financeiro Pessoal com IA")

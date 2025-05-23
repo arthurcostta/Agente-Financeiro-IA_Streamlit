@@ -1,0 +1,6 @@
+google-generativeai
+python-dotenv
+gspread
+oauth2client
+streamlit
+pandas # Adicione se não estiver lá, pois o Streamlit usa para DataFrames
