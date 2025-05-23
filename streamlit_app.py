@@ -100,7 +100,7 @@ def processar_dados_streamlit(email, renda, fonte_renda, dependentes, estabilida
     classificacao_padrao = {
         'Moradia(Aluguel)': {'tipo': 'Essencial', 'natureza': 'Fixo'},
         'Alimentação': {'tipo': 'Essencial', 'natureza': 'Variável'},
-        'Transporte(Carro, Transporte Público, Uber...)': {'tipo': 'Essencial', 'natureza': 'Variável'},
+        'Transporte (Carro, Transporte Público, Uber...)': {'tipo': 'Essencial', 'natureza': 'Variável'},
         'Saúde': {'tipo': 'Essencial', 'natureza': 'Variável'},
         'Educação': {'tipo': 'Essencial', 'natureza': 'Fixo'},
         'Lazer': {'tipo': 'Supérfluo', 'natureza': 'Variável'},
@@ -272,12 +272,12 @@ def gerar_planilha_google_sheets(dados_usuario, client_sheets, sheet_name="Meu_P
         st.error("Não foi possível gerar a planilha Google Sheets. O cliente da API não foi autenticado.")
         return None
 
-    st.info(f"Tentando gerar/atualizar Painel Interativo no Google Sheets ({sheet_name})...")
+    #st.info(f"Tentando gerar/atualizar Painel Interativo no Google Sheets ({sheet_name})...")
     spreadsheet = None
     try:
         try:
             spreadsheet = client_sheets.open(sheet_name)
-            st.info(f"Planilha '{sheet_name}' encontrada. Atualizando...")
+            #st.info(f"Planilha '{sheet_name}' encontrada. Atualizando...")
         except gspread.exceptions.SpreadsheetNotFound:
             st.warning(f"Planilha '{sheet_name}' não encontrada. Criando nova planilha...")
             try:
@@ -292,7 +292,7 @@ def gerar_planilha_google_sheets(dados_usuario, client_sheets, sheet_name="Meu_P
         if dados_usuario.email_pessoal_usuario:
             try:
                 spreadsheet.share(dados_usuario.email_pessoal_usuario, perm_type='user', role='writer')
-                st.success(f"Planilha compartilhada com sucesso com {dados_usuario.email_pessoal_usuario}.")
+                st.success(f"Planilha enviada com sucesso para o e-mail: {dados_usuario.email_pessoal_usuario}.")
             except Exception as share_error:
                 st.warning(f"AVISO: Não foi possível compartilhar a planilha com {dados_usuario.email_pessoal_usuario}.")
                 st.warning(f"Detalhes do erro de compartilhamento: {share_error}")
@@ -331,7 +331,7 @@ def gerar_planilha_google_sheets(dados_usuario, client_sheets, sheet_name="Meu_P
         ]
         worksheet_resumo.update('A1', resumo_data)
 
-        st.info("Aba 'Resumo Geral' atualizada com dados da análise, reserva e relatório simulado.")
+        #st.info("Aba 'Resumo Geral' atualizada com dados da análise, reserva e relatório simulado.")
 
         # ----- Aba de Gastos Detalhados (Mantida) -----
         try:
@@ -352,7 +352,7 @@ def gerar_planilha_google_sheets(dados_usuario, client_sheets, sheet_name="Meu_P
                 classif.get('natureza', 'N/A')
             ])
         worksheet_gastos.update('A1', gastos_rows)
-        st.info("Aba 'Gastos Detalhados' atualizada.")
+        #st.info("Aba 'Gastos Detalhados' atualizada.")
 
         # ----- Aba de Dívidas (Mantida) -----
         try:
@@ -377,9 +377,9 @@ def gerar_planilha_google_sheets(dados_usuario, client_sheets, sheet_name="Meu_P
             dividas_rows.append(["Nenhuma dívida informada.", "", "", "", "", ""])
 
         worksheet_dividas.update('A1', dividas_rows)
-        st.info("Aba 'Dívidas' atualizada.")
+        #st.info("Aba 'Dívidas' atualizada.")
 
-        st.success("Painel no Google Sheets gerado/atualizado com sucesso!")
+        #st.success("Painel no Google Sheets gerado/atualizado com sucesso!")
         return spreadsheet.url
 
     except Exception as e:
@@ -481,7 +481,7 @@ def main():
         st.info("Digite 0 para categorias sem gasto.")
         # Exemplo de categorias (adicione/remova conforme necessário)
         categorias_sugeridas = [
-            'Moradia(Aluguel)', 'Alimentação', 'Transporte(Carro, Transporte Público, Uber...)', 'Saúde', 'Educação',
+            'Moradia(Aluguel)', 'Alimentação', 'Transporte (Carro, Transporte Público, Uber...)', 'Saúde', 'Educação',
             'Lazer', 'Assinaturas', 'Contas de Consumo (água, luz, gás)', 'Outros (Cabelo, Estética...)'
         ]
         gastos_dict = {}
