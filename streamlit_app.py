@@ -401,7 +401,7 @@ def main():
     # Configuração da Google AI Key
     if 'GOOGLE_API_KEY' in st.secrets:
         GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
-        st.success("GOOGLE_API_KEY carregada dos Streamlit Secrets.")
+        #st.success("GOOGLE_API_KEY carregada dos Streamlit Secrets.")
     else:
         # Fallback para desenvolvimento local (lê do .env)
         load_dotenv() # Garante que o .env seja lido para ambiente local
@@ -431,7 +431,7 @@ def main():
             
             # Use gspread.service_account_from_dict com o dicionário parseado
             CLIENT_SHEETS = gspread.service_account_from_dict(service_account_info)
-            st.success("Autenticação com Google Sheets API via Streamlit Secrets bem-sucedida.")
+            #st.success("Autenticação com Google Sheets API via Streamlit Secrets bem-sucedida.")
         except json.JSONDecodeError as e:
             st.error(f"ERRO: O conteúdo do secret 'gcp_service_account_json' não é um JSON válido: {e}")
             st.warning("Verifique cuidadosamente a formatação do JSON no seu arquivo de secrets.")
@@ -481,8 +481,8 @@ def main():
         st.info("Digite 0 para categorias sem gasto.")
         # Exemplo de categorias (adicione/remova conforme necessário)
         categorias_sugeridas = [
-            'Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Educação',
-            'Lazer', 'Assinaturas', 'Contas de Consumo (água, luz, gás)', 'Outros'
+            'Moradia(Aluguel)', 'Alimentação', 'Transporte(Carro, Transporte Público, Uber...)', 'Saúde', 'Educação',
+            'Lazer', 'Assinaturas', 'Contas de Consumo (água, luz, gás)', 'Outros (Cabelo, Estética...)'
         ]
         gastos_dict = {}
         for categoria in categorias_sugeridas:
@@ -623,7 +623,7 @@ def main():
              st.write(dados_usuario.feedback_ia_comportamento)
 
         # Gera relatório simulado (pode ser exibido ou usado para a planilha)
-        gerar_relatorio_mensado_simulado(dados_usuario)
+        gerar_relatorio_mensal_simulado(dados_usuario)
         # st.subheader("Relatório Mensal Simulado")
         # st.text(dados_usuario.relatorio_mensal_simulado) # Exibe o relatório textual
 
