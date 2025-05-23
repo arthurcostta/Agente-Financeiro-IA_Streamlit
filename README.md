@@ -38,7 +38,7 @@ Gostaria de mencionar que não sou dev, mas nos últimos tempos comecei a tomar 
 
 ## 👨‍💻 Inicie Agora Seu Planejamento
 
-Para ter acesso a plataforma, basta clicar neste [Link](https://6184-170-81-210-250.ngrok-free.app/) e você será direcionado até nossa plataforma. Basta informa seus dados e deixar que o nosso Agente crie uma estratégia totalmente personalizada para sua situação atual.
+Para ter acesso a plataforma, basta clicar neste [Link](https://agente-financeiro-iaapp-fcm7kieb5xdeovaysapp7f4.streamlit.app/) e você será direcionado até nossa plataforma. Basta informa seus dados e deixar que o nosso Agente crie uma estratégia totalmente personalizada para sua situação atual.
 Esse não é o fim para você.
 Você só precisa ter um plano claro e tarefas especificas que precisa realizar para alcançar seus objetivos
 
