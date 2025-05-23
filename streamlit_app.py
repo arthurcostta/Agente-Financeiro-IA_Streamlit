@@ -23,6 +23,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import streamlit as st # Importa a biblioteca Streamlit
 import pandas as pd # Importado aqui para garantir que esteja disponível para DataFrames
+import json # <--- ADICIONE ESTA LINHA: Importa o módulo json
 
 # DEFINIÇÃO DA VARIÁVEL SCOPE
 SCOPE = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -97,15 +98,15 @@ def processar_dados_streamlit(email, renda, fonte_renda, dependentes, estabilida
 
     # Classificação padrão (mantida para a lógica interna de essenciais/supérfluos)
     classificacao_padrao = {
-        'Moradia (Aluguel)': {'tipo': 'Essencial', 'natureza': 'Fixo'},
+        'Moradia(Aluguel)': {'tipo': 'Essencial', 'natureza': 'Fixo'},
         'Alimentação': {'tipo': 'Essencial', 'natureza': 'Variável'},
-        'Transporte': {'tipo': 'Essencial', 'natureza': 'Variável'},
+        'Transporte(Carro, Transporte Público, Uber...)': {'tipo': 'Essencial', 'natureza': 'Variável'},
         'Saúde': {'tipo': 'Essencial', 'natureza': 'Variável'},
         'Educação': {'tipo': 'Essencial', 'natureza': 'Fixo'},
         'Lazer': {'tipo': 'Supérfluo', 'natureza': 'Variável'},
         'Assinaturas': {'tipo': 'Supérfluo', 'natureza': 'Fixo'},
         'Contas de Consumo (água, luz, gás)': {'tipo': 'Essencial', 'natureza': 'Variável'},
-        'Outros - Cabelo, Estética, Uber...': {'tipo': 'Variável', 'natureza': 'Variável'}
+        'Outros (Cabelo, Estética...)': {'tipo': 'Variável', 'natureza': 'Variável'}
     }
     dados_usuario.classificacao_gastos = {
         cat: classificacao_padrao.get(cat, {'tipo': 'Variável', 'natureza': 'Variável'})
@@ -271,7 +272,7 @@ def gerar_planilha_google_sheets(dados_usuario, client_sheets, sheet_name="Meu_P
         st.error("Não foi possível gerar a planilha Google Sheets. O cliente da API não foi autenticado.")
         return None
 
-    #st.info(f"Tentando gerar/atualizar Painel Interativo no Google Sheets ({sheet_name})...")
+    st.info(f"Tentando gerar/atualizar Painel Interativo no Google Sheets ({sheet_name})...")
     spreadsheet = None
     try:
         try:
@@ -330,7 +331,7 @@ def gerar_planilha_google_sheets(dados_usuario, client_sheets, sheet_name="Meu_P
         ]
         worksheet_resumo.update('A1', resumo_data)
 
-        #st.info("Aba 'Resumo Geral' atualizada com dados da análise, reserva e relatório simulado.")
+        st.info("Aba 'Resumo Geral' atualizada com dados da análise, reserva e relatório simulado.")
 
         # ----- Aba de Gastos Detalhados (Mantida) -----
         try:
@@ -351,7 +352,7 @@ def gerar_planilha_google_sheets(dados_usuario, client_sheets, sheet_name="Meu_P
                 classif.get('natureza', 'N/A')
             ])
         worksheet_gastos.update('A1', gastos_rows)
-        #st.info("Aba 'Gastos Detalhados' atualizada.")
+        st.info("Aba 'Gastos Detalhados' atualizada.")
 
         # ----- Aba de Dívidas (Mantida) -----
         try:
@@ -393,62 +394,69 @@ def main():
 
     st.set_page_config(page_title="Agente Financeiro Pessoal com IA", layout="wide")
 
-    # --- Configuração de Ambiente e APIs ---
-# Remova a linha load_dotenv() se ela estiver no escopo global fora de main()
-# Mantenha-a dentro do `else` do GOOGLE_API_KEY para uso local, se desejar.
+    # --- Configuração de Ambiente e APIs (MOVIDO PARA DENTRO DE MAIN) ---
+    # Remova a linha load_dotenv() se ela estiver no escopo global fora de main()
+    # Mantenha-a dentro do `else` do GOOGLE_API_KEY para uso local, se desejar.
 
-# Configuração da Google AI Key
-if 'GOOGLE_API_KEY' in st.secrets:
-    GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
-    st.success("GOOGLE_API_KEY carregada dos Streamlit Secrets.")
-else:
-    # Fallback para desenvolvimento local (lê do .env)
-    load_dotenv() # Garante que o .env seja lido para ambiente local
-    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-    if not GOOGLE_API_KEY:
-        st.error("ERRO: A variável de ambiente GOOGLE_API_KEY não está configurada.")
-        st.warning("Defina-a no seu arquivo .env local OU nos secrets do Streamlit Cloud.")
-        st.stop() # Interrompe a execução do Streamlit
+    # Configuração da Google AI Key
+    if 'GOOGLE_API_KEY' in st.secrets:
+        GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
+        st.success("GOOGLE_API_KEY carregada dos Streamlit Secrets.")
+    else:
+        # Fallback para desenvolvimento local (lê do .env)
+        load_dotenv() # Garante que o .env seja lido para ambiente local
+        GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+        if not GOOGLE_API_KEY:
+            st.error("ERRO: A variável de ambiente GOOGLE_API_KEY não está configurada.")
+            st.warning("Defina-a no seu arquivo .env local OU nos secrets do Streamlit Cloud.")
+            st.stop() # Interrompe a execução do Streamlit
 
-# Configura o modelo de IA
-try:
-    genai.configure(api_key=GOOGLE_API_KEY)
-    MODEL_IA = genai.GenerativeModel('gemini-2.0-flash')
-except Exception as e:
-    st.error(f"ERRO ao configurar a API do Google Gemini: {e}")
-    st.warning("Verifique se sua GOOGLE_API_KEY está correta e ativa.")
-    st.stop()
-
-# --- Configuração do Google Sheets API ---
-CLIENT_SHEETS = None
-
-# Preferência por carregar as credenciais do Google Sheets via secrets no Streamlit Cloud
-if 'gcp_service_account_json' in st.secrets:
+    # Configura o modelo de IA
     try:
-        # Use gspread.service_account_from_dict para carregar as credenciais diretamente do JSON em formato de dicionário
-        CLIENT_SHEETS = gspread.service_account_from_dict(st.secrets["gcp_service_account_json"])
-        st.success("Autenticação com Google Sheets API via Streamlit Secrets bem-sucedida.")
+        genai.configure(api_key=GOOGLE_API_KEY)
+        MODEL_IA = genai.GenerativeModel('gemini-2.0-flash')
     except Exception as e:
-        st.error(f"ERRO de autenticação com Google Sheets API (via secrets): {e}")
-        st.warning("Verifique se o JSON em 'gcp_service_account_json' nos secrets está correto e completo.")
+        st.error(f"ERRO ao configurar a API do Google Gemini: {e}")
+        st.warning("Verifique se sua GOOGLE_API_KEY está correta e ativa.")
         st.stop()
-else:
-    # Fallback para desenvolvimento local usando o arquivo JSON
-    # !!! ATUALIZE ESTE CAMINHO COM O CAMINHO COMPLETO PARA O ARQUIVO JSON NO SEU SISTEMA DE ARQUIVOS !!!
-    SERVICE_ACCOUNT_KEY_FILE = 'C:\\Users\\arthu\\google_sheets_key.json' # <--- MANTENHA ESTE CAMINHO LOCAL
 
-    if not os.path.exists(SERVICE_ACCOUNT_KEY_FILE):
-        st.error(f"Arquivo de credenciais não encontrado: {SERVICE_ACCOUNT_KEY_FILE}")
-        st.warning("Por favor, verifique se o caminho para o arquivo JSON está correto LOCALMENTE ou configure os secrets no Streamlit Cloud.")
-        st.stop() # Interrompe se o arquivo não for encontrado
-    try:
-        CREDS = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_KEY_FILE, SCOPE)
-        CLIENT_SHEETS = gspread.authorize(CREDS)
-        st.success("Autenticação com Google Sheets API localmente bem-sucedida.")
-    except Exception as e:
-        st.error(f"ERRO de autenticação com Google Sheets API (via arquivo): {e}")
-        st.warning("Verifique se o arquivo JSON não está corrompido e se a conta de serviço está ativa.")
-        st.stop()
+    # --- Configuração do Google Sheets API ---
+    CLIENT_SHEETS = None
+
+    # Preferência por carregar as credenciais do Google Sheets via secrets no Streamlit Cloud
+    if 'gcp_service_account_json' in st.secrets:
+        try:
+            # <--- MUDANÇA IMPORTANTE AQUI: Use json.loads() para converter a string JSON para um dicionário Python
+            service_account_info = json.loads(st.secrets["gcp_service_account_json"])
+            
+            # Use gspread.service_account_from_dict com o dicionário parseado
+            CLIENT_SHEETS = gspread.service_account_from_dict(service_account_info)
+            st.success("Autenticação com Google Sheets API via Streamlit Secrets bem-sucedida.")
+        except json.JSONDecodeError as e:
+            st.error(f"ERRO: O conteúdo do secret 'gcp_service_account_json' não é um JSON válido: {e}")
+            st.warning("Verifique cuidadosamente a formatação do JSON no seu arquivo de secrets.")
+            st.stop()
+        except Exception as e:
+            st.error(f"ERRO de autenticação com Google Sheets API (via secrets): {e}")
+            st.warning("Verifique se o JSON em 'gcp_service_account_json' nos secrets está correto e completo.")
+            st.stop()
+    else:
+        # Fallback para desenvolvimento local usando o arquivo JSON
+        # !!! ATUALIZE ESTE CAMINHO COM O CAMINHO COMPLETO PARA O ARQUIVO JSON NO SEU SISTEMA DE ARQUIVOS !!!
+        SERVICE_ACCOUNT_KEY_FILE = 'C:\\Users\\arthu\\google_sheets_key.json' # <--- MANTENHA ESTE CAMINHO LOCAL
+
+        if not os.path.exists(SERVICE_ACCOUNT_KEY_FILE):
+            st.error(f"Arquivo de credenciais não encontrado: {SERVICE_ACCOUNT_KEY_FILE}")
+            st.warning("Por favor, verifique se o caminho para o arquivo JSON está correto LOCALMENTE ou configure os secrets no Streamlit Cloud.")
+            st.stop() # Interrompe se o arquivo não for encontrado
+        try:
+            CREDS = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_KEY_FILE, SCOPE)
+            CLIENT_SHEETS = gspread.authorize(CREDS)
+            st.success("Autenticação com Google Sheets API localmente bem-sucedida.")
+        except Exception as e:
+            st.error(f"ERRO de autenticação com Google Sheets API (via arquivo): {e}")
+            st.warning("Verifique se o arquivo JSON não está corrompido e se a conta de serviço está ativa.")
+            st.stop()
 
 
     st.title("🤖 Agente Financeiro Pessoal com IA")
@@ -473,8 +481,8 @@ else:
         st.info("Digite 0 para categorias sem gasto.")
         # Exemplo de categorias (adicione/remova conforme necessário)
         categorias_sugeridas = [
-            'Moradia(Aluguel)', 'Alimentação', 'Transporte', 'Saúde', 'Educação',
-            'Lazer', 'Assinaturas', 'Contas de Consumo (água, luz, gás)', 'Outros - Cabelo, Estética, Uber...'
+            'Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Educação',
+            'Lazer', 'Assinaturas', 'Contas de Consumo (água, luz, gás)', 'Outros'
         ]
         gastos_dict = {}
         for categoria in categorias_sugeridas:
@@ -615,7 +623,7 @@ else:
              st.write(dados_usuario.feedback_ia_comportamento)
 
         # Gera relatório simulado (pode ser exibido ou usado para a planilha)
-        gerar_relatorio_mensal_simulado(dados_usuario)
+        gerar_relatorio_mensado_simulado(dados_usuario)
         # st.subheader("Relatório Mensal Simulado")
         # st.text(dados_usuario.relatorio_mensal_simulado) # Exibe o relatório textual
 
@@ -634,4 +642,3 @@ else:
 if __name__ == '__main__':
     main()
 
-#TESTE
