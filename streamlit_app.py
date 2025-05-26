@@ -459,7 +459,7 @@ def main():
             st.stop()
 
 
-    st.title("🤖 Agente Financeiro Pessoal com IA")
+    st.title("🤖 FinanciAI - Agente Financeiro Pessoal com IA")
     st.markdown("✨ Transforme sua Relação com Dinheiro com a Ajuda da Inteligência Artificial! ✨")
 
     st.header("📊 Seus Dados Financeiros")
